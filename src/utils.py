@@ -20,6 +20,11 @@ def encode_msg(msg):
     return np.array(one_hot_encode(int(msg[0])) + [float_encode(msg[1]), float_encode(msg[2]), msg[3]], dtype=np.float32)
 
 
+def encoded_to_label(msg):
+    """Convert input message to label message."""
+    return msg[0:16], msg[16:18], np.array(msg[18])
+
+
 def decode_msg(msg):
     raise NotImplementedError()
 
@@ -50,5 +55,15 @@ class BatchGenerator:
         # return a tuple of (input_steps-sized msg chunk, expected msg)
         current_song = self.data[self.song_cursor]
         return (list(map(encode_msg, current_song[self.msg_cursor - self.window_size: self.msg_cursor - 1])),
-                encode_msg(current_song[self.msg_cursor]))
+                encoded_to_label(encode_msg(current_song[self.msg_cursor])))
 
+
+def data_generator(datapath, batch_size, input_size, step):
+    data = np.load(datapath)
+    gen = BatchGenerator(data, input_size=input_size, step=step)
+    #def to_Xy(tpl):
+    #    return tpl[0], np.array(tpl[1:], dtype=np.float32)
+    while True:
+        X_train, y_train = zip(*[next(gen) for _ in range(batch_size)])
+        y_ch, y_nv, y_tm = zip(*y_train)
+        yield np.array(X_train), list(map(np.array, (y_ch, y_nv, y_tm)))
