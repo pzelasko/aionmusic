@@ -10,8 +10,8 @@ config = dict(
     data_path=args.data,
     input_sequence_size=10,
     input_sequence_step=1,
-    observation_size=19,  # 16 for channel, 1 for pitch, 1 for velocity, 1 for time
-    batch_size=64
+    observation_size=16+128+128+1,
+    batch_size=128
 )
 
 from keras.models import Model
@@ -22,16 +22,18 @@ x = LSTM(
     output_dim=128,
     activation='sigmoid')(input_layer)
 channel = Dense(16, activation='softmax', name='channel')(x)
-note_and_velocity = Dense(2, activation='sigmoid', name='note_and_velocity')(x)
+note = Dense(128, activation='softmax', name='note')(x)
+velocity = Dense(128, activation='softmax', name='velocity')(x)
 time = Dense(1, activation='linear', name='time')(x)
-model = Model(input=input_layer, output=[channel, note_and_velocity, time])
+model = Model(input=input_layer, output=[channel, note, velocity, time])
 
 model.compile(
     optimizer='adadelta',
     loss={'channel': 'categorical_crossentropy',
-        'note_and_velocity': 'binary_crossentropy',
+        'note': 'categorical_crossentropy',
+        'velocity': 'categorical_crossentropy',
         'time': 'mse'},
-    loss_weights={'channel': 1/16, 'note_and_velocity': 1/2, 'time': 100}
+    loss_weights={'channel': 1, 'note': 1, 'velocity': 1, 'time': 100}
 )
 
 from utils import data_generator

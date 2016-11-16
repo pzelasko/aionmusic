@@ -27,7 +27,7 @@ def convert_file(path):
         with mido.MidiFile(path) as midi_in:
             note_messages = filter(lambda msg: msg.type in 'note_on', midi_in)
             return np.array([(msg.channel, msg.note, msg.velocity, msg.time) for msg in note_messages],
-                    dtype=np.float32)
+                    dtype=np.dtype('i1, i1, i1, f4'))
     except KeyboardInterrupt:
         raise
     except:

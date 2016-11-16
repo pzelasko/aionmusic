@@ -17,12 +17,12 @@ def float_encode(number, max_value=127):
 
 def encode_msg(msg):
     """Encode a message as proper input for the model."""
-    return np.array(one_hot_encode(int(msg[0])) + [float_encode(msg[1]), float_encode(msg[2]), msg[3]], dtype=np.float32)
+    return np.array(one_hot_encode(int(msg[0])) + one_hot_encode(int(msg[1]), 127) + one_hot_encode(int(msg[2]), 127) + [msg[3]], dtype=np.float32)
 
 
 def encoded_to_label(msg):
     """Convert input message to label message."""
-    return msg[0:16], msg[16:18], np.array(msg[18])
+    return msg[0:16], msg[16:16+128], msg[16+128:16+256], np.array(msg[16+256])
 
 
 def decode_msg(msg):
@@ -61,9 +61,7 @@ class BatchGenerator:
 def data_generator(datapath, batch_size, input_size, step):
     data = np.load(datapath)
     gen = BatchGenerator(data, input_size=input_size, step=step)
-    #def to_Xy(tpl):
-    #    return tpl[0], np.array(tpl[1:], dtype=np.float32)
     while True:
         X_train, y_train = zip(*[next(gen) for _ in range(batch_size)])
-        y_ch, y_nv, y_tm = zip(*y_train)
-        yield np.array(X_train), list(map(np.array, (y_ch, y_nv, y_tm)))
+        y_ch, y_nt, y_vl, y_tm = zip(*y_train)
+        yield np.array(X_train), list(map(np.array, (y_ch, y_nt, y_vl, y_tm)))
